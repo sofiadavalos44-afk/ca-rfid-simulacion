@@ -1,51 +1,1225 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="es">
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <title>C&A · Simulación RFID</title>
+
 <style>
-:root{--ink:#151515;--muted:#666;--line:#e5e5e5;--soft:#f6f6f4;--accent:#111}
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#fff}
-header{border-bottom:1px solid #ddd;padding:18px 20px;display:flex;align-items:center;justify-content:space-between}
-.logo{font-weight:900;font-size:27px;letter-spacing:-1.5px}.tag{font-size:11px;border:1px solid #bbb;padding:6px 9px;border-radius:20px}
-main{max-width:900px;margin:auto;padding:22px 18px 40px}.search{display:flex;gap:10px;margin-bottom:20px}
-input,button{font-size:16px;min-height:46px;border-radius:8px}input{flex:1;border:1px solid #bbb;padding:0 14px}button{border:0;background:#111;color:#fff;padding:0 18px;font-weight:700}
-.hero{background:var(--soft);padding:20px;border-radius:14px;margin-bottom:15px}.eyebrow{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-h1{font-size:27px;margin:7px 0}.price{font-size:25px;font-weight:800}.code{color:var(--muted);font-size:13px;margin-top:5px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:15px 0}.card{border:1px solid var(--line);border-radius:12px;padding:15px}.label{font-size:12px;color:var(--muted)}.big{font-size:24px;font-weight:800;margin-top:4px}
-.status{display:inline-block;margin-top:10px;padding:7px 10px;border-radius:20px;background:#eaf6ea;font-size:12px;font-weight:700}
-section{border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:15px}h2{font-size:17px;margin:0 0 12px}
-.rows div{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #eee}.rows div:last-child{border:0}
-.pills{display:flex;gap:8px;flex-wrap:wrap}.pill{background:#f1f1f1;padding:8px 10px;border-radius:20px;font-size:13px}
-.note{font-size:12px;color:var(--muted);margin-top:20px;line-height:1.5}
-@media(max-width:620px){.grid{grid-template-columns:1fr}header{padding:15px}main{padding:18px 14px}}
-</style></head>
-<body><header><div class="logo">C&A</div><div class="tag">SIMULACIÓN ACADÉMICA · RFID</div></header>
-<main>
-<div class="search"><input id="q" placeholder="Escanea un QR o escribe CA-001..." autocomplete="off"><button id="go">Consultar</button></div>
-<div id="view"></div>
-<div class="note">Esta interfaz es una simulación académica. Los productos, existencias y precios son ficticios y se utilizan para representar una consulta omnicanal de inventario.</div>
-</main>
-<script>
-const products=[{"code": "CA-001", "name": "Blusa básica manga larga", "price": 399, "category": "Mujer", "store": 4, "warehouse": 18, "other": 7, "sizes": {"XS": 2, "S": 4, "M": 6, "L": 4, "XL": 2}, "stores": {"Cuautitlán Izcalli": 4, "Perinorte": 2, "Plaza Satélite": 5, "Tlalnepantla": 0}}, {"code": "CA-002", "name": "Jeans rectos denim", "price": 799, "category": "Mujer", "store": 6, "warehouse": 22, "other": 11, "sizes": {"24": 2, "26": 4, "28": 5, "30": 4, "32": 2}, "stores": {"Cuautitlán Izcalli": 6, "Perinorte": 3, "Plaza Satélite": 4, "Tlalnepantla": 4}}, {"code": "CA-003", "name": "Playera oversize algodón", "price": 299, "category": "Hombre", "store": 9, "warehouse": 31, "other": 14, "sizes": {"S": 4, "M": 7, "L": 6, "XL": 3}, "stores": {"Cuautitlán Izcalli": 9, "Perinorte": 5, "Plaza Satélite": 6, "Tlalnepantla": 3}}, {"code": "CA-004", "name": "Chamarra ligera acolchada", "price": 999, "category": "Mujer", "store": 2, "warehouse": 12, "other": 5, "sizes": {"XS": 1, "S": 2, "M": 3, "L": 1, "XL": 0}, "stores": {"Cuautitlán Izcalli": 2, "Perinorte": 1, "Plaza Satélite": 2, "Tlalnepantla": 2}}, {"code": "CA-005", "name": "Sudadera básica con capucha", "price": 649, "category": "Unisex", "store": 3, "warehouse": 16, "other": 9, "sizes": {"S": 2, "M": 4, "L": 3, "XL": 1}, "stores": {"Cuautitlán Izcalli": 3, "Perinorte": 2, "Plaza Satélite": 4, "Tlalnepantla": 3}}, {"code": "CA-006", "name": "Pantalón cargo", "price": 899, "category": "Hombre", "store": 1, "warehouse": 8, "other": 3, "sizes": {"28": 1, "30": 2, "32": 1, "34": 0, "36": 0}, "stores": {"Cuautitlán Izcalli": 1, "Perinorte": 1, "Plaza Satélite": 1, "Tlalnepantla": 1}}];
-function money(n){return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n)}
-function render(p){
- if(!p){document.getElementById('view').innerHTML='<section><b>Producto no encontrado</b><p>Prueba CA-001, CA-002, CA-003, CA-004, CA-005 o CA-006.</p></section>';return}
- const total=p.store+p.warehouse+p.other;
- const storeRows=Object.entries(p.stores).map(([k,v])=>`<div><span>🏬 ${k}</span><b>${v} piezas</b></div>`).join('');
- const sizes=Object.entries(p.sizes).map(([k,v])=>`<span class="pill">${k} · ${v}</span>`).join('');
- document.getElementById('view').innerHTML=`
- <div class="hero"><div class="eyebrow">${p.category} · Inventario omnicanal</div><h1>${p.name}</h1>
- <div class="price">${money(p.price)}</div><div class="code">Código de producto: ${p.code}</div>
- <span class="status">${p.store>0?'● Disponible en tienda':'● Sin existencias en tienda'}</span></div>
- <div class="grid">
- <div class="card"><div class="label">TIENDA ACTUAL</div><div class="big">${p.store}</div><div class="label">piezas</div></div>
- <div class="card"><div class="label">ALMACÉN</div><div class="big">${p.warehouse}</div><div class="label">piezas</div></div>
- <div class="card"><div class="label">OTRAS TIENDAS</div><div class="big">${p.other}</div><div class="label">piezas</div></div></div>
- <section><h2>Disponibilidad por talla</h2><div class="pills">${sizes}</div></section>
- <section><h2>Disponibilidad por sucursal</h2><div class="rows">${storeRows}</div></section>
- <section><h2>Resumen de disponibilidad</h2><div class="rows">
- <div><span>Inventario tienda actual</span><b>${p.store}</b></div><div><span>Inventario almacén</span><b>${p.warehouse}</b></div><div><span>Inventario otras tiendas</span><b>${p.other}</b></div><div><span>Total disponible</span><b>${total} piezas</b></div></div></section>`;
+
+:root{
+--ink:#151515;
+--muted:#666;
+--line:#e5e5e5;
+--soft:#f6f6f4;
+--accent:#111
 }
-function find(){let q=document.getElementById('q').value.trim().toUpperCase();let p=products.find(x=>x.code===q)||products.find(x=>x.code===new URLSearchParams(location.search).get('p')?.toUpperCase());render(p||products[0])}
-document.getElementById('go').addEventListener('click',find);document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')find()});
-const initial=new URLSearchParams(location.search).get('p'); if(initial){document.getElementById('q').value=initial.toUpperCase();} render(products.find(x=>x.code===initial?.toUpperCase())||products[0]);
-</script></body></html>
+
+*{
+box-sizing:border-box
+}
+
+body{
+margin:0;
+font-family:Arial,Helvetica,sans-serif;
+color:var(--ink);
+background:#fff
+}
+
+header{
+border-bottom:1px solid #ddd;
+padding:18px 20px;
+display:flex;
+align-items:center;
+justify-content:space-between
+}
+
+.logo{
+font-weight:900;
+font-size:27px;
+letter-spacing:-1.5px
+}
+
+.tag{
+font-size:11px;
+border:1px solid #bbb;
+padding:6px 9px;
+border-radius:20px
+}
+
+main{
+max-width:900px;
+margin:auto;
+padding:22px 18px 40px
+}
+
+.search{
+display:flex;
+gap:10px;
+margin-bottom:20px
+}
+
+input,button{
+font-size:16px;
+min-height:46px;
+border-radius:8px
+}
+
+input{
+flex:1;
+border:1px solid #bbb;
+padding:0 14px
+}
+
+button{
+border:0;
+background:#111;
+color:#fff;
+padding:0 18px;
+font-weight:700
+}
+
+.hero{
+background:var(--soft);
+padding:20px;
+border-radius:14px;
+margin-bottom:15px
+}
+
+.eyebrow{
+font-size:12px;
+color:var(--muted);
+text-transform:uppercase;
+letter-spacing:.08em
+}
+
+h1{
+font-size:27px;
+margin:7px 0
+}
+
+.price{
+font-size:25px;
+font-weight:800
+}
+
+.code{
+color:var(--muted);
+font-size:13px;
+margin-top:5px
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:12px;
+margin:15px 0
+}
+
+.card{
+border:1px solid var(--line);
+border-radius:12px;
+padding:15px
+}
+
+.label{
+font-size:12px;
+color:var(--muted)
+}
+
+.big{
+font-size:24px;
+font-weight:800;
+margin-top:4px
+}
+
+.status{
+display:inline-block;
+margin-top:10px;
+padding:7px 10px;
+border-radius:20px;
+background:#eaf6ea;
+font-size:12px;
+font-weight:700
+}
+
+section{
+border:1px solid var(--line);
+border-radius:12px;
+padding:16px;
+margin-top:15px
+}
+
+h2{
+font-size:17px;
+margin:0 0 12px
+}
+
+.rows div{
+display:flex;
+justify-content:space-between;
+padding:11px 0;
+border-bottom:1px solid #eee
+}
+
+.rows div:last-child{
+border:0
+}
+
+.pills{
+display:flex;
+gap:8px;
+flex-wrap:wrap
+}
+
+.pill{
+background:#f1f1f1;
+padding:8px 10px;
+border-radius:20px;
+font-size:13px
+}
+
+.note{
+font-size:12px;
+color:var(--muted);
+margin-top:20px;
+line-height:1.5
+}
+
+@media(max-width:620px){
+
+.grid{
+grid-template-columns:1fr
+}
+
+header{
+padding:15px
+}
+
+main{
+padding:18px 14px
+}
+
+}
+
+/* ========================= */
+/* CHATBOT */
+/* ========================= */
+
+.chat-btn{
+position:fixed;
+right:20px;
+bottom:20px;
+width:58px;
+height:58px;
+border:0;
+border-radius:50%;
+background:#111;
+color:white;
+font-size:24px;
+z-index:999;
+box-shadow:0 4px 15px #0003;
+cursor:pointer
+}
+
+.chat-box{
+display:none;
+position:fixed;
+right:20px;
+bottom:90px;
+width:340px;
+max-width:calc(100vw - 30px);
+background:white;
+border:1px solid #ddd;
+border-radius:16px;
+box-shadow:0 8px 30px #0003;
+overflow:hidden;
+z-index:998
+}
+
+.chat-header{
+background:#111;
+color:white;
+padding:15px;
+font-weight:bold;
+display:flex;
+justify-content:space-between;
+align-items:center
+}
+
+.chat-close{
+background:none;
+color:white;
+border:0;
+padding:0;
+min-height:auto;
+font-size:24px;
+cursor:pointer
+}
+
+.chat-messages{
+height:300px;
+overflow-y:auto;
+padding:12px;
+background:#f7f7f7
+}
+
+.chat-message{
+padding:9px 11px;
+border-radius:12px;
+margin:7px 0;
+font-size:14px;
+line-height:1.4;
+max-width:90%
+}
+
+.bot{
+background:white;
+border:1px solid #ddd
+}
+
+.user{
+background:#111;
+color:white;
+margin-left:auto
+}
+
+.chat-input{
+display:flex;
+gap:6px;
+padding:10px;
+border-top:1px solid #ddd
+}
+
+.chat-input input{
+min-width:0;
+height:40px;
+min-height:40px
+}
+
+.chat-input button{
+height:40px;
+min-height:40px;
+padding:0 12px;
+cursor:pointer
+}
+
+.chat-suggestions{
+display:flex;
+gap:6px;
+padding:8px 10px;
+overflow-x:auto;
+border-top:1px solid #eee;
+background:#fff
+}
+
+.chat-suggestions button{
+font-size:12px;
+padding:6px 9px;
+min-height:34px;
+white-space:nowrap;
+border:1px solid #ddd;
+background:#fff;
+color:#111;
+cursor:pointer
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">C&A</div>
+
+<div class="tag">
+SIMULACIÓN ACADÉMICA · RFID
+</div>
+
+</header>
+
+<main>
+
+<div class="search">
+
+<input
+id="q"
+placeholder="Escanea un QR o escribe CA-001..."
+autocomplete="off"
+>
+
+<button id="go">
+Consultar
+</button>
+
+</div>
+
+<div id="view"></div>
+
+<div class="note">
+
+Esta interfaz es una simulación académica. Los productos, existencias y precios son ficticios y se utilizan para representar una consulta omnicanal de inventario.
+
+</div>
+
+</main>
+
+
+<!-- ========================= -->
+<!-- CHATBOT -->
+<!-- ========================= -->
+
+<button
+class="chat-btn"
+onclick="abrirChat()"
+aria-label="Abrir asistente"
+>
+💬
+</button>
+
+
+<div class="chat-box" id="chatBox">
+
+<div class="chat-header">
+
+<span>
+Asistente C&A
+</span>
+
+<button
+class="chat-close"
+onclick="cerrarChat()"
+>
+×
+</button>
+
+</div>
+
+
+<div
+class="chat-messages"
+id="chatMessages"
+>
+
+<div class="chat-message bot">
+
+Hola 👋 Soy el <b>asistente de inventario C&A</b>.
+
+<br><br>
+
+Puedo ayudarte a consultar:
+
+<br>
+💰 Precios
+<br>
+👕 Tallas
+<br>
+📦 Inventario
+<br>
+🏬 Disponibilidad por sucursal
+
+<br><br>
+
+Escribe un código como <b>CA-001</b> para comenzar.
+
+</div>
+
+</div>
+
+
+<div class="chat-suggestions">
+
+<button onclick="preguntaRapida('CA-001')">
+CA-001
+</button>
+
+<button onclick="preguntaRapida('CA-002')">
+CA-002
+</button>
+
+<button onclick="preguntaRapida('Precio CA-001')">
+Precio
+</button>
+
+<button onclick="preguntaRapida('Tallas CA-001')">
+Tallas
+</button>
+
+</div>
+
+
+<div class="chat-input">
+
+<input
+id="chatInput"
+placeholder="Escribe tu pregunta..."
+>
+
+<button onclick="enviarChat()">
+Enviar
+</button>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* ========================= */
+/* INVENTARIO */
+/* ========================= */
+
+const products=[
+
+{
+code:"CA-001",
+name:"Blusa básica manga larga",
+price:399,
+category:"Mujer",
+store:4,
+warehouse:18,
+other:7,
+sizes:{
+"XS":2,
+"S":4,
+"M":6,
+"L":4,
+"XL":2
+},
+stores:{
+"Cuautitlán Izcalli":4,
+"Perinorte":2,
+"Plaza Satélite":5,
+"Tlalnepantla":0
+}
+},
+
+{
+code:"CA-002",
+name:"Jeans rectos denim",
+price:799,
+category:"Mujer",
+store:6,
+warehouse:22,
+other:11,
+sizes:{
+"24":2,
+"26":4,
+"28":5,
+"30":4,
+"32":2
+},
+stores:{
+"Cuautitlán Izcalli":6,
+"Perinorte":3,
+"Plaza Satélite":4,
+"Tlalnepantla":4
+}
+},
+
+{
+code:"CA-003",
+name:"Playera oversize algodón",
+price:299,
+category:"Hombre",
+store:9,
+warehouse:31,
+other:14,
+sizes:{
+"S":4,
+"M":7,
+"L":6,
+"XL":3
+},
+stores:{
+"Cuautitlán Izcalli":9,
+"Perinorte":5,
+"Plaza Satélite":6,
+"Tlalnepantla":3
+}
+},
+
+{
+code:"CA-004",
+name:"Chamarra ligera acolchada",
+price:999,
+category:"Mujer",
+store:2,
+warehouse:12,
+other:5,
+sizes:{
+"XS":1,
+"S":2,
+"M":3,
+"L":1,
+"XL":0
+},
+stores:{
+"Cuautitlán Izcalli":2,
+"Perinorte":1,
+"Plaza Satélite":2,
+"Tlalnepantla":2
+}
+},
+
+{
+code:"CA-005",
+name:"Sudadera básica con capucha",
+price:649,
+category:"Unisex",
+store:3,
+warehouse:16,
+other:9,
+sizes:{
+"S":2,
+"M":4,
+"L":3,
+"XL":1
+},
+stores:{
+"Cuautitlán Izcalli":3,
+"Perinorte":2,
+"Plaza Satélite":4,
+"Tlalnepantla":3
+}
+},
+
+{
+code:"CA-006",
+name:"Pantalón cargo",
+price:899,
+category:"Hombre",
+store:1,
+warehouse:8,
+other:3,
+sizes:{
+"28":1,
+"30":2,
+"32":1,
+"34":0,
+"36":0
+},
+stores:{
+"Cuautitlán Izcalli":1,
+"Perinorte":1,
+"Plaza Satélite":1,
+"Tlalnepantla":1
+}
+}
+
+];
+
+
+/* ========================= */
+/* FORMATO DE PRECIO */
+/* ========================= */
+
+function money(n){
+
+return new Intl.NumberFormat(
+'es-MX',
+{
+style:'currency',
+currency:'MXN',
+maximumFractionDigits:0
+}
+).format(n);
+
+}
+
+
+/* ========================= */
+/* MOSTRAR PRODUCTO */
+/* ========================= */
+
+function render(p){
+
+if(!p){
+
+document.getElementById('view').innerHTML=
+
+'<section><b>Producto no encontrado</b><p>Prueba CA-001, CA-002, CA-003, CA-004, CA-005 o CA-006.</p></section>';
+
+return;
+
+}
+
+const total=
+p.store+
+p.warehouse+
+p.other;
+
+
+const storeRows=
+Object.entries(p.stores)
+.map(
+([k,v])=>
+`<div>
+<span>🏬 ${k}</span>
+<b>${v} piezas</b>
+</div>`
+)
+.join('');
+
+
+const sizes=
+Object.entries(p.sizes)
+.map(
+([k,v])=>
+`<span class="pill">${k} · ${v}</span>`
+)
+.join('');
+
+
+document.getElementById('view').innerHTML=
+
+`
+
+<div class="hero">
+
+<div class="eyebrow">
+${p.category} · Inventario omnicanal
+</div>
+
+<h1>
+${p.name}
+</h1>
+
+<div class="price">
+${money(p.price)}
+</div>
+
+<div class="code">
+Código de producto: ${p.code}
+</div>
+
+<span class="status">
+${p.store>0
+?'● Disponible en tienda'
+:'● Sin existencias en tienda'}
+</span>
+
+</div>
+
+
+<div class="grid">
+
+<div class="card">
+
+<div class="label">
+TIENDA ACTUAL
+</div>
+
+<div class="big">
+${p.store}
+</div>
+
+<div class="label">
+piezas
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+ALMACÉN
+</div>
+
+<div class="big">
+${p.warehouse}
+</div>
+
+<div class="label">
+piezas
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+OTRAS TIENDAS
+</div>
+
+<div class="big">
+${p.other}
+</div>
+
+<div class="label">
+piezas
+</div>
+
+</div>
+
+</div>
+
+
+<section>
+
+<h2>
+Disponibilidad por talla
+</h2>
+
+<div class="pills">
+${sizes}
+</div>
+
+</section>
+
+
+<section>
+
+<h2>
+Disponibilidad por sucursal
+</h2>
+
+<div class="rows">
+${storeRows}
+</div>
+
+</section>
+
+
+<section>
+
+<h2>
+Resumen de disponibilidad
+</h2>
+
+<div class="rows">
+
+<div>
+<span>Inventario tienda actual</span>
+<b>${p.store}</b>
+</div>
+
+<div>
+<span>Inventario almacén</span>
+<b>${p.warehouse}</b>
+</div>
+
+<div>
+<span>Inventario otras tiendas</span>
+<b>${p.other}</b>
+</div>
+
+<div>
+<span>Total disponible</span>
+<b>${total} piezas</b>
+</div>
+
+</div>
+
+</section>
+
+`;
+
+}
+
+
+/* ========================= */
+/* BUSCAR PRODUCTO */
+/* ========================= */
+
+function find(){
+
+let q=
+document
+.getElementById('q')
+.value
+.trim()
+.toUpperCase();
+
+
+let p=
+products.find(
+x=>x.code===q
+)
+||
+products.find(
+x=>
+x.code===
+new URLSearchParams(location.search)
+.get('p')
+?.toUpperCase()
+);
+
+
+render(
+p||
+products[0]
+);
+
+}
+
+
+document
+.getElementById('go')
+.addEventListener(
+'click',
+find
+);
+
+
+document
+.getElementById('q')
+.addEventListener(
+'keydown',
+e=>{
+if(e.key==='Enter')
+find();
+}
+);
+
+
+const initial=
+new URLSearchParams(location.search)
+.get('p');
+
+
+if(initial){
+
+document.getElementById('q').value=
+initial.toUpperCase();
+
+}
+
+
+render(
+products.find(
+x=>x.code===
+initial?.toUpperCase()
+)
+||
+products[0]
+);
+
+
+/* ========================= */
+/* CHATBOT */
+/* ========================= */
+
+function abrirChat(){
+
+document
+.getElementById("chatBox")
+.style.display="block";
+
+}
+
+
+function cerrarChat(){
+
+document
+.getElementById("chatBox")
+.style.display="none";
+
+}
+
+
+function mensajeChat(texto,tipo){
+
+const div=
+document.createElement("div");
+
+div.className=
+"chat-message "+tipo;
+
+div.innerHTML=texto;
+
+document
+.getElementById("chatMessages")
+.appendChild(div);
+
+
+const mensajes=
+document.getElementById("chatMessages");
+
+mensajes.scrollTop=
+mensajes.scrollHeight;
+
+}
+
+
+/* ========================= */
+/* BOTONES RÁPIDOS */
+/* ========================= */
+
+function preguntaRapida(texto){
+
+document
+.getElementById("chatInput")
+.value=texto;
+
+enviarChat();
+
+}
+
+
+/* ========================= */
+/* RESPUESTAS DEL CHATBOT */
+/* ========================= */
+
+function enviarChat(){
+
+const input=
+document.getElementById("chatInput");
+
+const pregunta=
+input.value.trim();
+
+if(!pregunta)
+return;
+
+
+mensajeChat(
+pregunta,
+"user"
+);
+
+
+input.value="";
+
+
+setTimeout(function(){
+
+const p=
+pregunta.toLowerCase();
+
+let respuesta="";
+
+
+/* CA-001 */
+
+if(p.includes("ca-001")){
+
+respuesta=
+"👚 <b>Blusa básica manga larga</b><br><br>"+
+"💰 Precio: <b>$399 MXN</b><br>"+
+"🏬 Tienda actual: <b>4 piezas</b><br>"+
+"📦 Almacén: <b>18 piezas</b><br>"+
+"🏪 Otras tiendas: <b>7 piezas</b><br><br>"+
+"👕 Tallas disponibles: XS, S, M, L y XL.<br><br>"+
+"📍 Cuautitlán Izcalli: 4<br>"+
+"📍 Perinorte: 2<br>"+
+"📍 Plaza Satélite: 5<br>"+
+"📍 Tlalnepantla: 0";
+
+}
+
+
+/* CA-002 */
+
+else if(p.includes("ca-002")){
+
+respuesta=
+"👖 <b>Jeans rectos denim</b><br><br>"+
+"💰 Precio: <b>$799 MXN</b><br>"+
+"🏬 Tienda actual: <b>6 piezas</b><br>"+
+"📦 Almacén: <b>22 piezas</b><br>"+
+"🏪 Otras tiendas: <b>11 piezas</b><br><br>"+
+"👕 Tallas disponibles: 24, 26, 28, 30 y 32.<br><br>"+
+"📍 Cuautitlán Izcalli: 6<br>"+
+"📍 Perinorte: 3<br>"+
+"📍 Plaza Satélite: 4<br>"+
+"📍 Tlalnepantla: 4";
+
+}
+
+
+/* CA-003 */
+
+else if(p.includes("ca-003")){
+
+respuesta=
+"👕 <b>Playera oversize algodón</b><br><br>"+
+"💰 Precio: <b>$299 MXN</b><br>"+
+"🏬 Tienda actual: <b>9 piezas</b><br>"+
+"📦 Almacén: <b>31 piezas</b><br>"+
+"🏪 Otras tiendas: <b>14 piezas</b><br><br>"+
+"👕 Tallas disponibles: S, M, L y XL.<br><br>"+
+"📍 Cuautitlán Izcalli: 9<br>"+
+"📍 Perinorte: 5<br>"+
+"📍 Plaza Satélite: 6<br>"+
+"📍 Tlalnepantla: 3";
+
+}
+
+
+/* CA-004 */
+
+else if(p.includes("ca-004")){
+
+respuesta=
+"🧥 <b>Chamarra ligera acolchada</b><br><br>"+
+"💰 Precio: <b>$999 MXN</b><br>"+
+"🏬 Tienda actual: <b>2 piezas</b><br>"+
+"📦 Almacén: <b>12 piezas</b><br>"+
+"🏪 Otras tiendas: <b>5 piezas</b><br><br>"+
+"👕 Tallas disponibles: XS, S, M y L.<br><br>"+
+"📍 Cuautitlán Izcalli: 2<br>"+
+"📍 Perinorte: 1<br>"+
+"📍 Plaza Satélite: 2<br>"+
+"📍 Tlalnepantla: 2";
+
+}
+
+
+/* CA-005 */
+
+else if(p.includes("ca-005")){
+
+respuesta=
+"🧥 <b>Sudadera básica con capucha</b><br><br>"+
+"💰 Precio: <b>$649 MXN</b><br>"+
+"🏬 Tienda actual: <b>3 piezas</b><br>"+
+"📦 Almacén: <b>16 piezas</b><br>"+
+"🏪 Otras tiendas: <b>9 piezas</b><br><br>"+
+"👕 Tallas disponibles: S, M, L y XL.<br><br>"+
+"📍 Cuautitlán Izcalli: 3<br>"+
+"📍 Perinorte: 2<br>"+
+"📍 Plaza Satélite: 4<br>"+
+"📍 Tlalnepantla: 3";
+
+}
+
+
+/* CA-006 */
+
+else if(p.includes("ca-006")){
+
+respuesta=
+"👖 <b>Pantalón cargo</b><br><br>"+
+"💰 Precio: <b>$899 MXN</b><br>"+
+"🏬 Tienda actual: <b>1 pieza</b><br>"+
+"📦 Almacén: <b>8 piezas</b><br>"+
+"🏪 Otras tiendas: <b>3 piezas</b><br><br>"+
+"👕 Tallas disponibles: 28, 30 y 32.<br><br>"+
+"📍 Cuautitlán Izcalli: 1<br>"+
+"📍 Perinorte: 1<br>"+
+"📍 Plaza Satélite: 1<br>"+
+"📍 Tlalnepantla: 1";
+
+}
+
+
+/* PRECIO */
+
+else if(
+p.includes("precio")||
+p.includes("cuánto")||
+p.includes("cuanto")
+){
+
+respuesta=
+"💰 Claro. Para consultar un precio escribe el código del producto.<br><br>"+
+"Ejemplo:<br><b>Precio CA-001</b>";
+
+}
+
+
+/* TALLAS */
+
+else if(
+p.includes("talla")||
+p.includes("tallas")
+){
+
+respuesta=
+"👕 Claro. Para consultar las tallas disponibles escribe el código del producto.<br><br>"+
+"Ejemplo:<br><b>Tallas CA-002</b>";
+
+}
+
+
+/* INVENTARIO */
+
+else if(
+p.includes("dispon")||
+p.includes("inventario")||
+p.includes("existencia")||
+p.includes("stock")
+){
+
+respuesta=
+"📦 Puedo consultar la disponibilidad de tienda, almacén y otras sucursales.<br><br>"+
+"Escribe el código del producto.<br><br>"+
+"Ejemplo:<br><b>Disponibilidad CA-003</b>";
+
+}
+
+
+/* SALUDO */
+
+else if(
+p.includes("hola")||
+p.includes("buenas")||
+p.includes("hey")
+){
+
+respuesta=
+"¡Hola! 👋<br><br>"+
+"Soy el <b>Asistente C&A</b> para consultas de inventario.<br><br>"+
+"Puedes preguntarme por el precio, tallas o disponibilidad de cualquier producto.<br><br>"+
+"Prueba con <b>CA-001</b>.";
+
+}
+
+
+/* RESPUESTA DEFAULT */
+
+else{
+
+respuesta=
+"🤖 No encontré esa consulta.<br><br>"+
+"Prueba con alguno de estos códigos:<br><br>"+
+"<b>CA-001</b> · Blusa básica<br>"+
+"<b>CA-002</b> · Jeans rectos<br>"+
+"<b>CA-003</b> · Playera oversize<br>"+
+"<b>CA-004</b> · Chamarra<br>"+
+"<b>CA-005</b> · Sudadera<br>"+
+"<b>CA-006</b> · Pantalón cargo";
+
+}
+
+
+mensajeChat(
+respuesta,
+"bot"
+);
+
+},400);
+
+}
+
+
+/* ENTER PARA ENVIAR */
+
+document
+.getElementById("chatInput")
+.addEventListener(
+"keydown",
+function(e){
+
+if(e.key==="Enter"){
+
+enviarChat();
+
+}
+
+}
+);
+
+</script>
+
+</body>
+
+</html>
